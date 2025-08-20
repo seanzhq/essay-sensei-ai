@@ -9,7 +9,7 @@ interface AuthContextType {
   signup: (username: string, password: string, email: string) => Promise<boolean>;
   forgotPassword: (email: string) => Promise<boolean>;
   resetPassword: (email: string, code: string, newPassword: string) => Promise<boolean>;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -49,21 +49,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<boolean> => {
+    const loginData = {email: email, password: password};
+
     try {
-      // Simulate API call - replace with actual authentication
-      if (username === 'demo' && password === 'password') {
+        const response = await fetch(`/auth/login`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(loginData)
+        });
+  
+        if (!response.ok) {
+            return false;
+        }
+        
+        const data = await response.json();
         const userData: User = {
-          id: '1',
-          username: 'demo',
-          email: 'demo@example.com',
-          isConfirmed: true,
+            email: email,
+            isConfirmed: true,
+            access_token: data.access_token,
+            id_token: data.id_token,
+            refresh_token: data.refresh_token,
+            expires_in: data.expires_in,
         };
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
         return true;
-      }
-      return false;
+
     } catch (error) {
       console.error('Login error:', error);
       return false;

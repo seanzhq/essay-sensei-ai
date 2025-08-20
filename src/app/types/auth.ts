@@ -1,8 +1,10 @@
 export interface User {
-  id: string;
-  username: string;
   email: string;
   isConfirmed: boolean;
+  access_token: string;
+  id_token: string;
+  refresh_token: string;
+  expires_in: number;
 }
 
 export interface LoginCredentials {
