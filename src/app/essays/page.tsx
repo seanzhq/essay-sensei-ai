@@ -137,19 +137,33 @@ const GREWritingAssistant: React.FC = () => {
   const [essay, setEssay] = useState<string>("");
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (!authLoading && !user) {
       router.replace('/auth');
     }
-  }, [isAuthenticated, router]);
+  }, [user, authLoading, router]);
 
   const currentQuestion = getQuestionById(currentQuestionId) || greQuestions[0];
   const sampleSuggestions = getSampleSuggestions(currentQuestionId);
   const sampleSummary = getSampleSummary(currentQuestionId);
+
+  // Show loading while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex h-screen bg-gray-50 items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Simulate parsing sentences for highlighting (in real app, use NLP)
   const sentences = essay.split(/(?<=[.!?])\s+/);
@@ -160,6 +174,35 @@ const GREWritingAssistant: React.FC = () => {
     setSubmitted(false);
     setHoveredIdx(null);
   };
+
+  const handleSubmit = async (questionId: string, answer: string) => {
+    setIsLoading(true);
+    setError('');
+
+    try {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+          throw new Error('Access credentials found, please login');
+      }
+      const access_token = JSON.parse(userData)['access_token']
+      const response = await fetch(`/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${access_token}`
+          },
+          body: JSON.stringify({"prompt": answer})
+      });
+      
+      const data = await response.json();
+      setSubmitted(true)
+
+    } catch (err) {
+      setError('An error occurred during submission');
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -265,7 +308,7 @@ const GREWritingAssistant: React.FC = () => {
                 <button
                   className="bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl shadow hover:bg-blue-700 disabled:opacity-60 transition text-base"
                   disabled={!essay || submitted}
-                  onClick={() => setSubmitted(true)}
+                  onClick={() => handleSubmit(currentQuestionId, essay)}
                 >
                   {submitted ? "Submitted" : "Submit for Analysis"}
                 </button>

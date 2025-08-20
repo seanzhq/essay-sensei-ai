@@ -5,6 +5,7 @@ import { User } from '../types/auth';
 
 interface AuthContextType {
   user: User | null;
+  isLoading: boolean;
   confirm: (username: string, code: string) => Promise<boolean>;
   signup: (username: string, password: string, email: string) => Promise<boolean>;
   forgotPassword: (email: string) => Promise<boolean>;
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Check for existing session
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+    setIsLoading(false);
   }, []);
 
   const signup = async (username: string, password: string, email: string) => {
@@ -111,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ 
-        user, login, logout, isAuthenticated: !!user, confirm, signup, forgotPassword, resetPassword 
+        user, isLoading, login, logout, isAuthenticated: !!user, confirm, signup, forgotPassword, resetPassword 
     }}>
       {children}
     </AuthContext.Provider>
